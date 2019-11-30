@@ -803,7 +803,7 @@ class CallbackModule(CallbackBase):
             ("Hosts", C.COLOR_VERBOSE, 30),
             ("Success", C.COLOR_VERBOSE, 7),
             ("Changed", C.COLOR_VERBOSE, 7),
-            ("Dark", C.COLOR_VERBOSE, 7),
+            ("Unreachable", C.COLOR_VERBOSE, 7),
             ("Failed", C.COLOR_VERBOSE, 7),
             ("Rescued", C.COLOR_VERBOSE, 7),
             ("Ignored", C.COLOR_VERBOSE, 7),

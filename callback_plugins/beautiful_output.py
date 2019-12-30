@@ -84,8 +84,6 @@ except:
     from collections import Sequence
 from numbers import Number
 from os.path import basename, isdir
-from watchdog.observers.fsevents2 import FSEventsObserver2 as Observer
-from watchdog.events import FileSystemEventHandler, EVENT_TYPE_CREATED
 
 _symbol = {
     "success": to_text("✔"),
@@ -230,7 +228,7 @@ def stringtruncate(
     truncated_width = width - truncsize
 
     return stringc(
-        to_text(justfn(to_bytes(value), width))
+        to_text(justfn(value, width))
         if do_not_trucate
         else to_text("{0}{1}".format(
             value[:truncated_width] if justfn == str.ljust else truncate_placeholder,
@@ -279,7 +277,7 @@ def dictsum(totals, values):
             totals[key] += value
 
 
-class CallbackModule(CallbackBase, FileSystemEventHandler):
+class CallbackModule(CallbackBase):
     """The Callback plugin class to produce clean outputs.
 
     This class handles all Ansible callbacks that generate text on the output.
@@ -805,7 +803,7 @@ class CallbackModule(CallbackBase, FileSystemEventHandler):
             ("Hosts", C.COLOR_VERBOSE, 30),
             ("Success", C.COLOR_VERBOSE, 7),
             ("Changed", C.COLOR_VERBOSE, 7),
-            ("Dark", C.COLOR_VERBOSE, 7),
+            ("Unreachable", C.COLOR_VERBOSE, 7),
             ("Failed", C.COLOR_VERBOSE, 7),
             ("Rescued", C.COLOR_VERBOSE, 7),
             ("Ignored", C.COLOR_VERBOSE, 7),
@@ -1285,6 +1283,9 @@ class CallbackModule(CallbackBase, FileSystemEventHandler):
         self._get_task_display_name(task)
 
         if self.task_display_name:
+            if task._role:
+                self.task_display_name += stringc(" [%s]" % task._role.get_name(), 'dark gray');
+
             self._task_name_buffer = (
                 self.task_display_name
                 if not is_handler

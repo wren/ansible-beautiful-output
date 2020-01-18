@@ -64,7 +64,7 @@ import locale
 import os
 import re
 import textwrap
-import yaml
+import yaml, simplejson
 
 from ansible import constants as C
 from ansible import context
@@ -498,13 +498,13 @@ class CallbackModule(CallbackBase):
                 to_text("[PLAY: {0}]").format(stringc(name, C.COLOR_HIGHLIGHT)).center(91, "-")
             )
         else:
-            self.display("[PLAY]".center(80, "-"))
+            self.display("[PLAY]".center(180, "-"))
 
         if play.hosts:
             self.display("Hosts:")
             for host in play.hosts:
                 self.display(to_text("  - {0}").format(stringc(host, C.COLOR_HIGHLIGHT)))
-            self.display(to_text("-") * 80)
+            self.display(to_text("-") * 180)
 
     def v2_playbook_on_task_start(self, task, is_conditional):
         """Displays a title for the giving ``task`.
@@ -789,7 +789,7 @@ class CallbackModule(CallbackBase):
             method from the :class:`~ansible.plugins.callback.CallbackBase`
             class.
         """
-        self.display(to_text("{0}\n\n").format("-" * 80))
+        self.display(to_text("{0}\n\n").format("-" * 160))
         totals = {
             "ok": 0,
             "changed": 0,
@@ -928,12 +928,26 @@ class CallbackModule(CallbackBase):
             run.
         """
         tags = set()
+        T = []
         for play in playbook.get_plays():
             for block in play.compile():
                 blocks = block.filter_tagged_tasks({})
                 if blocks.has_tasks():
                     for task in blocks.block:
                         tags.update(task.tags)
+                        T.append(task.tags)
+#        with open('/tmp/dat.tags','w') as f:
+#            f.write(simplejson.dumps(tags))
+
+        """
+        with open('/tmp/dat.tags_T','w') as f:
+            f.write(simplejson.dumps(T))
+
+        with open('/tmp/dat.tags_req','w') as f:
+            f.write(simplejson.dumps(context.CLIARGS["tags"]))
+        """
+
+
         if "tags" in context.CLIARGS:
             requested_tags = set(context.CLIARGS["tags"])
         else:
@@ -942,7 +956,7 @@ class CallbackModule(CallbackBase):
             tags = tags.intersection(requested_tags)
         return sorted(tags)
 
-    def _display_tag_strip(self, playbook, width=80):
+    def _display_tag_strip(self, playbook, width=180):
         """Displays a line of tags present in the given ``playbook``
         intersected with the tags given to Ansible in the command line.
 
@@ -1112,9 +1126,11 @@ class CallbackModule(CallbackBase):
         Returns:
             :obj:`str`: A formated version of the giving ``result``.
         """
+        _R = ''
         if not self._item_processed:
             self._item_processed = True
-            self.display(to_text("{0}{1} Items:").format(" " * indent, symbol("loop")))
+            #self.display(to_text("{0}{1} Items:").format(" " * indent, symbol("loop")))
+            _R += to_text("{0}{1} Items:").format(" " * indent, symbol("loop"))
 
         item_name = self._get_item_label(result._result)
         if isinstance(item_name, dict):
@@ -1132,6 +1148,7 @@ class CallbackModule(CallbackBase):
         task_result = to_text("{0}{1} {2} ({3}) [{4}]").format(
             " " * (indent + 2), symbol_char, item_name, task_host, status.upper()
         )
+        #task_result = "{} {}".format(_R, task_result)
         return task_result
 
     def _display_summary_table_separator(self, symbol_char):
@@ -1350,7 +1367,7 @@ class CallbackModule(CallbackBase):
         return text
 
     @staticmethod
-    def reindent_session(title, text, indent=2, width=80):
+    def reindent_session(title, text, indent=2, width=180):
         """This method returns a text formatted with the giving ``indent`` and
         wrapped at the giving ``width``.
         

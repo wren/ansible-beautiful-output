@@ -823,7 +823,7 @@ class CallbackModule(CallbackBase):
                 (host_summary["unreachable"], C.COLOR_UNREACHABLE, 7),
                 (host_summary["failures"], C.COLOR_ERROR, 7),
                 (host_summary["rescued"], C.COLOR_OK, 7),
-                (100, C.COLOR_WARN, 7),
+                (host_summary["ignored"] or 0, C.COLOR_WARN, 7),
 #                (host_summary["ignored"], C.COLOR_WARN, 7),
             )
 
@@ -835,7 +835,7 @@ class CallbackModule(CallbackBase):
             (totals["unreachable"], C.COLOR_UNREACHABLE, 7),
             (totals["failures"], C.COLOR_ERROR, 7),
             (totals["rescued"], C.COLOR_OK, 7),
-            (100, C.COLOR_WARN, 7),
+            (host_summary["ignored"] or 0, C.COLOR_WARN, 7),
 #            (totals["ignored"], C.COLOR_WARN, 7),
         )
 

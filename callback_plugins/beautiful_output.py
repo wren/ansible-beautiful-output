@@ -85,6 +85,8 @@ except:
 from numbers import Number
 from os.path import basename, isdir
 
+TERMINAL_WIDTH = 110
+
 _symbol = {
     "success": to_text("✔"),
     "warning": to_text("⚠"),
@@ -498,13 +500,13 @@ class CallbackModule(CallbackBase):
                 to_text("[PLAY: {0}]").format(stringc(name, C.COLOR_HIGHLIGHT)).center(91, "-")
             )
         else:
-            self.display("[PLAY]".center(180, "-"))
+            self.display("[PLAY]".center(TERMINAL_WIDTH, "-"))
 
         if play.hosts:
             self.display("Hosts:")
             for host in play.hosts:
                 self.display(to_text("  - {0}").format(stringc(host, C.COLOR_HIGHLIGHT)))
-            self.display(to_text("-") * 180)
+            self.display(to_text("-") * TERMINAL_WIDTH)
 
     def v2_playbook_on_task_start(self, task, is_conditional):
         """Displays a title for the giving ``task`.
@@ -821,7 +823,8 @@ class CallbackModule(CallbackBase):
                 (host_summary["unreachable"], C.COLOR_UNREACHABLE, 7),
                 (host_summary["failures"], C.COLOR_ERROR, 7),
                 (host_summary["rescued"], C.COLOR_OK, 7),
-                (host_summary["ignored"], C.COLOR_WARN, 7),
+                (100, C.COLOR_WARN, 7),
+#                (host_summary["ignored"], C.COLOR_WARN, 7),
             )
 
         self._display_summary_table_separator("-")
@@ -832,7 +835,8 @@ class CallbackModule(CallbackBase):
             (totals["unreachable"], C.COLOR_UNREACHABLE, 7),
             (totals["failures"], C.COLOR_ERROR, 7),
             (totals["rescued"], C.COLOR_OK, 7),
-            (totals["ignored"], C.COLOR_WARN, 7),
+            (100, C.COLOR_WARN, 7),
+#            (totals["ignored"], C.COLOR_WARN, 7),
         )
 
     def _handle_exception(self, result, use_stderr=False):
@@ -956,7 +960,7 @@ class CallbackModule(CallbackBase):
             tags = tags.intersection(requested_tags)
         return sorted(tags)
 
-    def _display_tag_strip(self, playbook, width=180):
+    def _display_tag_strip(self, playbook, width=TERMINAL_WIDTH):
         """Displays a line of tags present in the given ``playbook``
         intersected with the tags given to Ansible in the command line.
 
@@ -1367,7 +1371,7 @@ class CallbackModule(CallbackBase):
         return text
 
     @staticmethod
-    def reindent_session(title, text, indent=2, width=180):
+    def reindent_session(title, text, indent=2, width=TERMINAL_WIDTH):
         """This method returns a text formatted with the giving ``indent`` and
         wrapped at the giving ``width``.
         

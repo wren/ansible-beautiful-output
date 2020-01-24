@@ -497,7 +497,7 @@ class CallbackModule(CallbackBase):
         name = play.get_name().strip()
         if name:
             self.display(
-                to_text("[PLAY: {0}]").format(stringc(name, C.COLOR_HIGHLIGHT)).center(91, "-")
+                to_text("[PLAY: {0}]").format(stringc(name, C.COLOR_HIGHLIGHT)).center(TERMINAL_WIDTH, "-")
             )
         else:
             self.display("[PLAY]".center(TERMINAL_WIDTH, "-"))

@@ -77,6 +77,9 @@ from ansible.template import Templar
 from ansible.utils.color import colorize, hostcolor, stringc
 from ansible.vars.clean import strip_internal_keys, module_response_deepcopy
 from ansible.vars.hostvars import HostVarsVars
+from ansible.playbook import Playbook
+from ansible.playbook.play import Play
+from ansible.playbook.task import Task
 from collections import OrderedDict
 try:
     from collections.abc import Sequence
@@ -388,7 +391,7 @@ class CallbackModule(CallbackBase):
             msg=ansi_escape.sub("", msg), stderr=stderr, log_only=True
         )
 
-    def v2_playbook_on_start(self, playbook):
+    def v2_playbook_on_start(self, playbook: Playbook):
         """Displays the Playbook report Header when Ansible starst running it.
 
         The content displayed will depend on the options used to run the
@@ -439,7 +442,6 @@ class CallbackModule(CallbackBase):
             self._display_cli_arguments()
         else:
             self._display_tag_strip(playbook)
-        self.display(to_text("\n"))
 
     def v2_playbook_on_no_hosts_matched(self):
         """Display a warning when there is no hosts available.
@@ -470,7 +472,7 @@ class CallbackModule(CallbackBase):
             color=C.COLOR_ERROR,
         )
 
-    def v2_playbook_on_play_start(self, play):
+    def v2_playbook_on_play_start(self, play: Play):
         """Displays a banner with the play name and the hosts used in this
         play.
 
@@ -508,7 +510,7 @@ class CallbackModule(CallbackBase):
                 self.display(to_text("  - {0}").format(stringc(host, C.COLOR_HIGHLIGHT)))
             self.display(to_text("-") * TERMINAL_WIDTH)
 
-    def v2_playbook_on_task_start(self, task, is_conditional):
+    def v2_playbook_on_task_start(self, task: Task, is_conditional):
         """Displays a title for the giving ``task`.
 
         Args:
@@ -527,7 +529,7 @@ class CallbackModule(CallbackBase):
         """
         self._display_task_name(task)
 
-    def v2_playbook_on_handler_task_start(self, task):
+    def v2_playbook_on_handler_task_start(self, task: Task):
         """Displays a title for the giving ``task`, marking it as a handler
         task.
 
@@ -546,7 +548,7 @@ class CallbackModule(CallbackBase):
         """
         self._display_task_name(task, is_handler=True)
 
-    def v2_runner_retry(self, result):
+    def v2_runner_retry(self, result: TaskResult):
         """Displays the retrying steps Ansible is doing to make the task run
         on the host.
 
@@ -579,7 +581,7 @@ class CallbackModule(CallbackBase):
             msg += "Result was: %s" % CallbackModule.dump_value(abridged_result)
         self.display(msg, color=C.COLOR_DEBUG)
 
-    def v2_runner_on_start(self, host, task):
+    def v2_runner_on_start(self, host, task: Task):
         """Caches the giving ``host`` object to be easily accessible during the
         evaluation of a task display.
 
@@ -597,7 +599,7 @@ class CallbackModule(CallbackBase):
         """
         self._current_host = host
 
-    def v2_runner_on_ok(self, result):
+    def v2_runner_on_ok(self, result: TaskResult):
         """Displays the result of a task run.
 
         This method will also be called every time an **item**, on a loop task,
@@ -626,7 +628,7 @@ class CallbackModule(CallbackBase):
         task_result = self._process_result_output(result, msg, symbol("success"))
         self.display(task_result, display_color)
 
-    def v2_runner_on_skipped(self, result):
+    def v2_runner_on_skipped(self, result: TaskResult):
         """If the you configured Ansible to display skipped hosts, this method
         will display the task and information that it was skipped.
 
@@ -652,7 +654,7 @@ class CallbackModule(CallbackBase):
         else:
             self.outlines = []
 
-    def v2_runner_on_failed(self, result, ignore_errors=False):
+    def v2_runner_on_failed(self, result: TaskResult, ignore_errors=False):
         """When a task fails, this method is called to display information
         about the error.
 
@@ -679,7 +681,7 @@ class CallbackModule(CallbackBase):
         task_result = self._process_result_output(result, status, symbol("failure"))
         self.display(task_result, color)
 
-    def v2_runner_on_unreachable(self, result):
+    def v2_runner_on_unreachable(self, result: TaskResult):
         """When a host becames *unreachable* before the execution of its task,
         this method will display information about the unreachability.
 
@@ -701,7 +703,7 @@ class CallbackModule(CallbackBase):
         task_result = self._process_result_output(result, "unreachable", symbol("dead"))
         self.display(task_result, C.COLOR_UNREACHABLE)
 
-    def v2_runner_item_on_ok(self, result):
+    def v2_runner_item_on_ok(self, result: TaskResult):
         """Displays the result of an item task run.
 
         Args:
@@ -728,7 +730,7 @@ class CallbackModule(CallbackBase):
         )
         self.display(task_result, display_color)
 
-    def v2_runner_item_on_skipped(self, result):
+    def v2_runner_item_on_skipped(self, result: TaskResult):
         """If the you configured Ansible to display skipped hosts, this method
         will display a task item and information that it was skipped.
 
@@ -755,7 +757,7 @@ class CallbackModule(CallbackBase):
         else:
             self.outlines = []
 
-    def v2_runner_item_on_failed(self, result):
+    def v2_runner_item_on_failed(self, result: TaskResult):
         """When an intem on a task fails, this method is called to display
         information about the failure.
 
@@ -805,8 +807,8 @@ class CallbackModule(CallbackBase):
             ("Hosts", C.COLOR_VERBOSE, 30),
             ("Success", C.COLOR_VERBOSE, 7),
             ("Changed", C.COLOR_VERBOSE, 7),
-            ("Unreachable", C.COLOR_VERBOSE, 7),
-            ("Failed", C.COLOR_VERBOSE, 7),
+            ("Unreachable", C.COLOR_VERBOSE, 11),
+            ("Failed", C.COLOR_VERBOSE, 6),
             ("Rescued", C.COLOR_VERBOSE, 7),
             ("Ignored", C.COLOR_VERBOSE, 7),
         )
@@ -821,8 +823,8 @@ class CallbackModule(CallbackBase):
                 (host_name, C.COLOR_HIGHLIGHT, 30),
                 (host_summary["ok"], C.COLOR_OK, 7),
                 (host_summary["changed"], C.COLOR_CHANGED, 7),
-                (host_summary["unreachable"] or 0, C.COLOR_UNREACHABLE, 7),
-                (host_summary["failures"] or 0, C.COLOR_ERROR, 7),
+                (host_summary["unreachable"] or 0, C.COLOR_UNREACHABLE, 11),
+                (host_summary["failures"] or 0, C.COLOR_ERROR, 6),
                 (host_summary["rescued"], C.COLOR_OK, 7),
                 (host_summary["ignored"] or 0, C.COLOR_WARN, 7),
 #                (host_summary["ignored"], C.COLOR_WARN, 7),
@@ -833,14 +835,14 @@ class CallbackModule(CallbackBase):
             ("Totals", C.COLOR_VERBOSE, 30),
             (totals["ok"], C.COLOR_OK, 7),
             (totals["changed"], C.COLOR_CHANGED, 7),
-            (totals["unreachable"] or 0, C.COLOR_UNREACHABLE, 7),
-            (totals["failures"] or 0, C.COLOR_ERROR, 7),
+            (totals["unreachable"] or 0, C.COLOR_UNREACHABLE, 11),
+            (totals["failures"] or 0, C.COLOR_ERROR, 6),
             (totals["rescued"], C.COLOR_OK, 7),
             (host_summary["ignored"] or 0, C.COLOR_WARN, 7),
 #            (totals["ignored"], C.COLOR_WARN, 7),
         )
 
-    def _handle_exception(self, result, use_stderr=False):
+    def _handle_exception(self, result: TaskResult, use_stderr=False):
         """When an exception happen during the execution of a playbook, this
         method is called to display information about the crash.
 
@@ -865,7 +867,7 @@ class CallbackModule(CallbackBase):
                 del result["exception"]
             result["stderr"] = msg
 
-    def _is_run_verbose(self, result=None, verbosity=0):
+    def _is_run_verbose(self, result: TaskResult=None, verbosity=0):
         """Verify if the current run is verbose (should display information)
         respecting the given ``verbosity``.
 
@@ -1019,7 +1021,7 @@ class CallbackModule(CallbackBase):
         else:
             self.task_display_name = task_display_name
 
-    def _preprocess_result(self, result):
+    def _preprocess_result(self, result: TaskResult):
         """Check the result object for errors or warning. It also make sure
         that the task title buffer is flushed and displayed to the user.
 
@@ -1037,7 +1039,7 @@ class CallbackModule(CallbackBase):
         self._handle_exception(result._result)
         self._handle_warnings(result._result)
 
-    def _get_host_string(self, result, prefix=""):
+    def _get_host_string(self, result: TaskResult, prefix=""):
         """Retrieve the host from the giving ``result``.
 
         Args:
@@ -1056,7 +1058,7 @@ class CallbackModule(CallbackBase):
             )
         return task_host
 
-    def _process_result_output(self, result, status, symbol_char="", indent=2):
+    def _process_result_output(self, result: TaskResult, status, symbol_char="", indent=2):
         """Returns the result converted to string.
 
         Each key in the ``result._result`` is considered a session for the
@@ -1112,7 +1114,7 @@ class CallbackModule(CallbackBase):
 
         return task_result
 
-    def _process_item_result_output(self, result, status, symbol_char="", indent=2):
+    def _process_item_result_output(self, result: TaskResult, status, symbol_char="", indent=2):
         """Displays the given ``result`` of an item task.
 
         This method is a simplified version of the
@@ -1168,8 +1170,8 @@ class CallbackModule(CallbackBase):
                 symbol_char * 30,
                 symbol_char * 7,
                 symbol_char * 7,
-                symbol_char * 7,
-                symbol_char * 7,
+                symbol_char * 11,
+                symbol_char * 6,
                 symbol_char * 7,
                 symbol_char * 7,
             )

@@ -1073,7 +1073,7 @@ class CallbackModule(CallbackBase):
         return task_host
 
     def _process_result_output(
-        self, result: TaskResult, status, symbol_char="", indent=2
+        self, result: TaskResult, status: str, symbol_char: str = "", indent=2
     ):
         """Returns the result converted to string.
 
@@ -1121,7 +1121,11 @@ class CallbackModule(CallbackBase):
                 )
 
         for title, text in result._result.items():
-            if title not in _session_title and text and self._is_run_verbose(result, 2):
+            if (
+                title not in _session_title
+                and text
+                and (status == "failed" or self._is_run_verbose(result, 2))
+            ):
                 task_result += self.reindent_session(
                     title.replace("_", " ").replace(".", " ").capitalize(),
                     text,

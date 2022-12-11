@@ -102,7 +102,7 @@ _symbol: dict[str, str] = {
     "loop": to_text("∑"),
     "arrow_right": to_text("➞"),
     "skip": to_text("⬚"),
-    "flag": to_text("⚑"),
+    "flag": to_text(""),
 }
 """:obj:`dict` of :obj:`str` to :obj:`str`: A dictionary of symbols to be used
 when the Callback needs to display a symbol on the screen.
@@ -998,22 +998,23 @@ class CallbackModule(CallbackBase):
         total_len = 0
         first_item = True
         for tag in sorted(tags):
+            escape_code = "\x1b[30;47m"
             if not first_item:
                 if total_len + len(tag) + 5 > width:
                     tag_strings += to_text("\n\n  {0} {1} {2} {3}").format(
-                        "\x1b[6;30;47m", symbol("flag"), tag, "\x1b[0m"
+                        escape_code, symbol("flag"), tag, "\x1b[0m"
                     )
                     total_len = len(tag) + 6
                     first_item = True
                 else:
                     tag_strings += to_text(" {0} {1} {2} {3}").format(
-                        "\x1b[6;30;47m", symbol("flag"), tag, "\x1b[0m"
+                        escape_code, symbol("flag"), tag, "\x1b[0m"
                     )
                     total_len += len(tag) + 5
             else:
                 first_item = False
                 tag_strings += to_text("  {0} {1} {2} {3}").format(
-                    "\x1b[6;30;47m", symbol("flag"), tag, "\x1b[0m"
+                    escape_code, symbol("flag"), tag, "\x1b[0m"
                 )
                 total_len = len(tag) + 6
         self.display("\n")

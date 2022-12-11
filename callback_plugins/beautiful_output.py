@@ -506,10 +506,7 @@ class CallbackModule(CallbackBase):
         self._current_play = play
         name = play.get_name().strip()
         if name:
-            self.display(
-                to_text(f"[PLAY: {name}]")
-                .center(TERMINAL_WIDTH, DIVIDER)
-            )
+            self.display(to_text(f"[PLAY: {name}]").center(TERMINAL_WIDTH, DIVIDER))
         else:
             self.display("[PLAY]".center(TERMINAL_WIDTH, DIVIDER))
 
@@ -519,7 +516,7 @@ class CallbackModule(CallbackBase):
                 self.display(
                     to_text("  - {0}").format(stringc(host, C.COLOR_HIGHLIGHT))
                 )
-            self.display( DIVIDER * TERMINAL_WIDTH)
+            self.display(DIVIDER * TERMINAL_WIDTH)
 
     def v2_playbook_on_task_start(self, task: Task, is_conditional):
         """Displays a title for the giving ``task`.

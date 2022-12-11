@@ -90,7 +90,7 @@ from numbers import Number
 from os.path import basename, isdir
 
 TERMINAL_WIDTH = os.get_terminal_size().columns
-DIVIDER = "─" * TERMINAL_WIDTH
+DIVIDER = "─"
 
 _symbol: dict[str, str] = {
     "success": to_text("🗹"),
@@ -507,12 +507,11 @@ class CallbackModule(CallbackBase):
         name = play.get_name().strip()
         if name:
             self.display(
-                to_text("[PLAY: {0}]")
-                .format(stringc(name, C.COLOR_HIGHLIGHT))
-                .center(TERMINAL_WIDTH, "─")
+                to_text(f"[PLAY: {name}]")
+                .center(TERMINAL_WIDTH, DIVIDER)
             )
         else:
-            self.display("[PLAY]".center(TERMINAL_WIDTH, "-"))
+            self.display("[PLAY]".center(TERMINAL_WIDTH, DIVIDER))
 
         if play.hosts:
             self.display("Hosts:")
@@ -520,7 +519,7 @@ class CallbackModule(CallbackBase):
                 self.display(
                     to_text("  - {0}").format(stringc(host, C.COLOR_HIGHLIGHT))
                 )
-            self.display(to_text("─") * TERMINAL_WIDTH)
+            self.display( DIVIDER * TERMINAL_WIDTH)
 
     def v2_playbook_on_task_start(self, task: Task, is_conditional):
         """Displays a title for the giving ``task`.
@@ -805,7 +804,7 @@ class CallbackModule(CallbackBase):
             method from the :class:`~ansible.plugins.callback.CallbackBase`
             class.
         """
-        self.display(to_text("{0}\n\n").format("-" * 160))
+        self.display(to_text("{0}\n\n").format(DIVIDER * TERMINAL_WIDTH))
         totals = {
             "ok": 0,
             "changed": 0,
@@ -824,7 +823,7 @@ class CallbackModule(CallbackBase):
             ("Rescued", C.COLOR_VERBOSE, 7),
             ("Ignored", C.COLOR_VERBOSE, 7),
         )
-        self._display_summary_table_separator("=")
+        self._display_summary_table_separator("━")
 
         hosts = sorted(stats.processed.keys())
         host_summary = None
@@ -842,7 +841,7 @@ class CallbackModule(CallbackBase):
                 #                (host_summary["ignored"], C.COLOR_WARN, 7),
             )
 
-        self._display_summary_table_separator("-")
+        self._display_summary_table_separator(DIVIDER)
         self._display_summary_table_row(
             ("Totals", C.COLOR_VERBOSE, 30),
             (totals["ok"], C.COLOR_OK, 7),

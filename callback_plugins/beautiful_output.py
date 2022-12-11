@@ -81,6 +81,7 @@ from ansible.playbook import Playbook
 from ansible.playbook.play import Play
 from ansible.playbook.task import Task
 from collections import OrderedDict
+
 try:
     from collections.abc import Sequence
 except:
@@ -236,10 +237,16 @@ def stringtruncate(
     return stringc(
         to_text(justfn(str(value), width))
         if do_not_trucate
-        else to_text("{0}{1}".format(
-            value[:truncated_width] if justfn == str.ljust else truncate_placeholder,
-            truncate_placeholder if justfn == str.ljust else value[truncated_width:],
-        )),
+        else to_text(
+            "{0}{1}".format(
+                value[:truncated_width]
+                if justfn == str.ljust
+                else truncate_placeholder,
+                truncate_placeholder
+                if justfn == str.ljust
+                else value[truncated_width:],
+            )
+        ),
         color,
     )
 
@@ -500,7 +507,9 @@ class CallbackModule(CallbackBase):
         name = play.get_name().strip()
         if name:
             self.display(
-                to_text("[PLAY: {0}]").format(stringc(name, C.COLOR_HIGHLIGHT)).center(TERMINAL_WIDTH, "─")
+                to_text("[PLAY: {0}]")
+                .format(stringc(name, C.COLOR_HIGHLIGHT))
+                .center(TERMINAL_WIDTH, "─")
             )
         else:
             self.display("[PLAY]".center(TERMINAL_WIDTH, "-"))
@@ -508,7 +517,9 @@ class CallbackModule(CallbackBase):
         if play.hosts:
             self.display("Hosts:")
             for host in play.hosts:
-                self.display(to_text("  - {0}").format(stringc(host, C.COLOR_HIGHLIGHT)))
+                self.display(
+                    to_text("  - {0}").format(stringc(host, C.COLOR_HIGHLIGHT))
+                )
             self.display(to_text("─") * TERMINAL_WIDTH)
 
     def v2_playbook_on_task_start(self, task: Task, is_conditional):
@@ -828,7 +839,7 @@ class CallbackModule(CallbackBase):
                 (host_summary["failures"] or 0, C.COLOR_ERROR, 6),
                 (host_summary["rescued"], C.COLOR_OK, 7),
                 (host_summary["ignored"] or 0, C.COLOR_WARN, 7),
-#                (host_summary["ignored"], C.COLOR_WARN, 7),
+                #                (host_summary["ignored"], C.COLOR_WARN, 7),
             )
 
         self._display_summary_table_separator("-")
@@ -840,7 +851,7 @@ class CallbackModule(CallbackBase):
             (totals["failures"] or 0, C.COLOR_ERROR, 6),
             (totals["rescued"], C.COLOR_OK, 7),
             (host_summary["ignored"] or 0, C.COLOR_WARN, 7),
-#            (totals["ignored"], C.COLOR_WARN, 7),
+            #            (totals["ignored"], C.COLOR_WARN, 7),
         )
 
     def _handle_exception(self, result: TaskResult, use_stderr=False):
@@ -868,7 +879,7 @@ class CallbackModule(CallbackBase):
                 del result["exception"]
             result["stderr"] = msg
 
-    def _is_run_verbose(self, result: TaskResult=None, verbosity=0):
+    def _is_run_verbose(self, result: TaskResult = None, verbosity=0):
         """Verify if the current run is verbose (should display information)
         respecting the given ``verbosity``.
 
@@ -909,14 +920,18 @@ class CallbackModule(CallbackBase):
             if key != "args" and value
         }.items():
             if iscollection(val):
-                self.display(to_text("{0}{1}:").format(" " * indent, arg), color=C.COLOR_VERBOSE)
+                self.display(
+                    to_text("{0}{1}:").format(" " * indent, arg), color=C.COLOR_VERBOSE
+                )
                 for v in val:
                     self.display(
-                        to_text("{0}- {1}").format(" " * (indent + 2), v), color=C.COLOR_VERBOSE
+                        to_text("{0}- {1}").format(" " * (indent + 2), v),
+                        color=C.COLOR_VERBOSE,
                     )
             else:
                 self.display(
-                    to_text("{0}{1}: {2}").format(" " * indent, arg, val), color=C.COLOR_VERBOSE
+                    to_text("{0}{1}: {2}").format(" " * indent, arg, val),
+                    color=C.COLOR_VERBOSE,
                 )
 
     def _get_tags(self, playbook):
@@ -944,8 +959,8 @@ class CallbackModule(CallbackBase):
                     for task in blocks.block:
                         tags.update(task.tags)
                         T.append(task.tags)
-#        with open('/tmp/dat.tags','w') as f:
-#            f.write(simplejson.dumps(tags))
+        #        with open('/tmp/dat.tags','w') as f:
+        #            f.write(simplejson.dumps(tags))
 
         """
         with open('/tmp/dat.tags_T','w') as f:
@@ -954,7 +969,6 @@ class CallbackModule(CallbackBase):
         with open('/tmp/dat.tags_req','w') as f:
             f.write(simplejson.dumps(context.CLIARGS["tags"]))
         """
-
 
         if "tags" in context.CLIARGS:
             requested_tags = set(context.CLIARGS["tags"])
@@ -1059,7 +1073,9 @@ class CallbackModule(CallbackBase):
             )
         return task_host
 
-    def _process_result_output(self, result: TaskResult, status, symbol_char="", indent=2):
+    def _process_result_output(
+        self, result: TaskResult, status, symbol_char="", indent=2
+    ):
         """Returns the result converted to string.
 
         Each key in the ``result._result`` is considered a session for the
@@ -1115,7 +1131,9 @@ class CallbackModule(CallbackBase):
 
         return task_result
 
-    def _process_item_result_output(self, result: TaskResult, status, symbol_char="", indent=2):
+    def _process_item_result_output(
+        self, result: TaskResult, status, symbol_char="", indent=2
+    ):
         """Displays the given ``result`` of an item task.
 
         This method is a simplified version of the
@@ -1134,10 +1152,10 @@ class CallbackModule(CallbackBase):
         Returns:
             :obj:`str`: A formated version of the giving ``result``.
         """
-        _R = ''
+        _R = ""
         if not self._item_processed:
             self._item_processed = True
-            #self.display(to_text("{0}{1} Items:").format(" " * indent, symbol("loop")))
+            # self.display(to_text("{0}{1} Items:").format(" " * indent, symbol("loop")))
             _R += to_text("{0}{1} Items:").format(" " * indent, symbol("loop"))
 
         item_name = self._get_item_label(result._result)
@@ -1147,7 +1165,7 @@ class CallbackModule(CallbackBase):
             elif "path" in item_name:
                 item_name = item_name.get("path")
             else:
-                item_name = u'JSON: "{0}"'.format(
+                item_name = 'JSON: "{0}"'.format(
                     stringtruncate(
                         json.dumps(item_name, separators=(",", ":")), width=36
                     )
@@ -1156,7 +1174,7 @@ class CallbackModule(CallbackBase):
         task_result = to_text("{0}{1} {2} ({3}) [{4}]").format(
             " " * (indent + 2), symbol_char, item_name, task_host, status.upper()
         )
-        #task_result = "{} {}".format(_R, task_result)
+        # task_result = "{} {}".format(_R, task_result)
         return task_result
 
     def _display_summary_table_separator(self, symbol_char):
@@ -1309,7 +1327,9 @@ class CallbackModule(CallbackBase):
 
         if self.task_display_name:
             if task._role:
-                self.task_display_name += stringc(" [%s]" % task._role.get_name(), 'dark gray');
+                self.task_display_name += stringc(
+                    " [%s]" % task._role.get_name(), "dark gray"
+                )
 
             self._task_name_buffer = (
                 self.task_display_name
@@ -1324,8 +1344,7 @@ class CallbackModule(CallbackBase):
                 self._task_name_buffer = None
 
     def _flush_display_buffer(self):
-        """Display a task title if there is one to display.
-        """
+        """Display a task title if there is one to display."""
         if self._task_name_buffer:
             self.display(self._task_name_buffer)
             self._task_name_buffer = None

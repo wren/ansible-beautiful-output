@@ -1,26 +1,6 @@
-# -*- coding: utf-8 -*-
-
 # MIT License
-#
+# Copyright © 2022 Jonathan Wren <jonathan@nowandwren.com>
 # Copyright (c) 2019 Thiago Alves
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
 
 """A clean and opinionated output callback plugin.
 
@@ -37,11 +17,30 @@ in your project, and set the ``stdout_callback`` option on the
     stdout_callback = beautiful_output
 
 """
+import json
+import os
+import re
+import textwrap
+from collections import OrderedDict
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
-# Make coding more python3-ish
-from __future__ import absolute_import, division, print_function
+import yaml
+from ansible import constants as C
+from ansible import context
+from ansible.module_utils._text import to_text
+from ansible.module_utils.common._collections_compat import Mapping
+from ansible.plugins.callback import CallbackBase
+from ansible.template import Templar
+from ansible.utils.color import stringc
+from ansible.vars.clean import module_response_deepcopy
+from ansible.vars.clean import strip_internal_keys
 
-__metaclass__ = type
+if TYPE_CHECKING:
+    from ansible.executor.task_result import TaskResult
+    from ansible.playbook import Playbook
+    from ansible.playbook.play import Play
+    from ansible.playbook.task import Task
 
 DOCUMENTATION = """---
     callback: beautiful_output
@@ -58,36 +57,6 @@ DOCUMENTATION = """---
     requirements:
       - set as stdout in configuration
 """
-
-import json
-import locale
-import os
-import re
-import textwrap
-import yaml, simplejson
-
-from ansible import constants as C
-from ansible import context
-from ansible.executor.task_result import TaskResult
-from ansible.module_utils._text import to_text, to_bytes
-from ansible.module_utils.common._collections_compat import Mapping
-from ansible.parsing.utils.yaml import from_yaml
-from ansible.plugins.callback import CallbackBase
-from ansible.template import Templar
-from ansible.utils.color import colorize, hostcolor, stringc
-from ansible.vars.clean import strip_internal_keys, module_response_deepcopy
-from ansible.vars.hostvars import HostVarsVars
-from ansible.playbook import Playbook
-from ansible.playbook.play import Play
-from ansible.playbook.task import Task
-from collections import OrderedDict
-
-try:
-    from collections.abc import Sequence
-except:
-    from collections import Sequence
-from numbers import Number
-from os.path import basename, isdir
 
 TERMINAL_WIDTH = os.get_terminal_size().columns
 DIVIDER = "─"

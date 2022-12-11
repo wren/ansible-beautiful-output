@@ -850,7 +850,6 @@ class CallbackModule(CallbackBase):
             (totals["failures"] or 0, C.COLOR_ERROR, 6),
             (totals["rescued"], C.COLOR_OK, 7),
             (host_summary["ignored"] or 0, C.COLOR_WARN, 7),
-            #            (totals["ignored"], C.COLOR_WARN, 7),
         )
 
     def _handle_exception(self, result: TaskResult, use_stderr=False):

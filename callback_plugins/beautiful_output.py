@@ -233,7 +233,7 @@ def stringtruncate(
     truncated_width = width - truncsize
 
     return stringc(
-        to_text(justfn(value, width))
+        to_text(justfn(str(value), width))
         if do_not_trucate
         else to_text("{0}{1}".format(
             value[:truncated_width] if justfn == str.ljust else truncate_placeholder,

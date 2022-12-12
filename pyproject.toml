@@ -1,0 +1,84 @@
+[tool.poetry]
+name = "ansible-beautiful-output"
+version = "v0.7"
+description = ""
+authors = [
+    "Jonathan Wren <jonathan@nowandwren.com>",
+    "Thiago Alves",
+]
+maintainers = [
+    "Jonathan Wren <jonathan@nowandwren.com>",
+]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/wren/ansible-beautiful-output"
+repository = "https://github.com/wren/ansible-beautiful-output"
+classifiers = [
+]
+
+[tool.poetry.urls]
+"Documentation" = "https://github.com/wren/ansible-beautiful-output"
+"Issue Tracker" = "https://github.com/wren/ansible-beautiful-output/issues"
+
+[tool.poetry.dependencies]
+python = ">=3.10.0, <4.0"
+ansible = ">=7.1.0"
+
+[tool.poetry.group.dev.dependencies]
+black = { version = ">=21.5b2", allow-prereleases = true }
+flakeheaven = ">=3.0"
+flake8-black = ">=0.3.3"
+flake8-isort = ">=5.0.0"
+flake8-type-checking = ">=2.2.0"
+flake8-simplify = ">=0.19"
+ipdb = "*"
+isort = ">=5.10"
+poethepoet = "*"
+
+[tool.poe.tasks]
+# Groups of tasks
+format.default_item_type = "cmd"
+format.sequence = [
+  "isort .",
+  "black .",
+]
+
+lint.env = { FLAKEHEAVEN_CACHE_TIMEOUT = "0" }
+lint.default_item_type = "cmd"
+lint.sequence = [
+  "poetry --version",
+  "poetry check",
+  "flakeheaven --version",
+  "flakeheaven plugins",
+  "flakeheaven lint",
+]
+
+[tool.isort]
+profile = "black"
+force_single_line = true
+known_first_party = ["tests"]
+
+[tool.flakeheaven]
+max_line_length = 88
+exclude = [".git"]
+
+[tool.flakeheaven.plugins]
+"py*" = ["+*"]
+pycodestyle = [
+  "-E101",
+  "-E111", "-E114", "-E115", "-E116", "-E117",
+  "-E12*",
+  "-E13*",
+  "-E2*",
+  "-E3*",
+  "-E401",
+  "-E5*",
+  "-E70",
+  "-W1*", "-W2*", "-W3*", "-W5*",
+]
+"flake8-*" = ["+*"]
+flake8-black = ["-BLK901"]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

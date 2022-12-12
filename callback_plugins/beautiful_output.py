@@ -862,7 +862,7 @@ class CallbackModule(CallbackBase):
         var_manager = task.get_variable_manager()
         task_args = task.args
         if task.when and var_manager:
-            all_hosts = CallbackModule.get_chainned_value(
+            all_hosts = CallbackModule.get_chained_value(
                 var_manager.get_vars(), "hostvars"
             )
             play_task_vars = var_manager.get_vars(
@@ -871,7 +871,7 @@ class CallbackModule(CallbackBase):
             templar = Templar(task._loader, variables=play_task_vars)
             exception = False
             for hostname in all_hosts.keys():
-                host_vars = CallbackModule.get_chainned_value(all_hosts, hostname)
+                host_vars = CallbackModule.get_chained_value(all_hosts, hostname)
                 host_vars.update(play_task_vars)
                 try:
                     if not task.evaluate_conditional(templar, host_vars):
@@ -993,10 +993,10 @@ class CallbackModule(CallbackBase):
         return status, display_color
 
     @staticmethod
-    def get_chainned_value(mapping: dict, *args):
+    def get_chained_value(mapping: dict, *args):
         """Returns a value from a dictionary.
 
-        It can return chainned values based on a list of keys giving by the
+        It can return chained values based on a list of keys giving by the
         `args` argument.
 
         Example:
@@ -1009,7 +1009,7 @@ class CallbackModule(CallbackBase):
             ...         }
             ...     }
             ... }
-            >>> CallbackModule.get_chainned_value(nested_dict, "dict_key", "other_dict_key", "target_value")
+            >>> CallbackModule.get_chained_value(nested_dict, "dict_key", "other_dict_key", "target_value")
             'Found It!'
         """
         if args:
@@ -1019,7 +1019,7 @@ class CallbackModule(CallbackBase):
             if key in mapping:
                 value = mapping[key]
                 if others:
-                    return CallbackModule.get_chainned_value(value, *others)
+                    return CallbackModule.get_chained_value(value, *others)
                 if isinstance(value, Mapping):
                     dict_value = {}
                     dict_value.update(value)

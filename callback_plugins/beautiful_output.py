@@ -952,7 +952,9 @@ class CallbackModule(CallbackBase):
         return text
 
     @staticmethod
-    def reindent_session(title: str, text: str, indent: int = 2, width: int = TERMINAL_WIDTH):
+    def reindent_session(
+        title: str, text: str, indent: int = 2, width: int = TERMINAL_WIDTH
+    ):
         """This method returns a text formatted with the giving `indent` and
         wrapped at the giving `width`.
         """
@@ -980,7 +982,9 @@ class CallbackModule(CallbackBase):
         return output
 
     @staticmethod
-    def changed_artifacts(result: "TaskResult", status: str, display_color: str) -> tuple[str, str]:
+    def changed_artifacts(
+        result: "TaskResult", status: str, display_color: str
+    ) -> tuple[str, str]:
         """Detect if the given `result` did change anything during its
         execution and return the proper status and display color for it.
 

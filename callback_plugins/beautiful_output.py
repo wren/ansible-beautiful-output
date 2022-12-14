@@ -355,7 +355,7 @@ class CallbackModule(CallbackBase):
         self._display_task_name(task)
 
     def v2_playbook_on_handler_task_start(self, task: "Task"):
-        """Displays a title for the giving `task, marking it as a handler task."""
+        """Displays a title for the given `task, marking it as a handler task."""
         self._display_task_name(task, is_handler=True)
 
     def v2_runner_retry(self, result: "TaskResult"):
@@ -575,7 +575,7 @@ class CallbackModule(CallbackBase):
         """Returns a collection of tags that will be associated with all tasks
         runnin during this session.
 
-        This means that it will collect all the tags available in the giving
+        This means that it will collect all the tags available in the given
         `playbook`, and filter against the tags passed to Ansible in the
         command line.
 
@@ -706,7 +706,7 @@ class CallbackModule(CallbackBase):
             indent: How many characters the text generated from the `result` should be
                 indended to.
 
-        Returns a formated version of the giving `result`.
+        Returns a formated version of the given `result`.
         """
         task_host = self._get_host_string(result)
 
@@ -756,7 +756,7 @@ class CallbackModule(CallbackBase):
             indent: How many characters the text generated from the `result` should be
                 indended to.
 
-        Returns a formated version of the giving `result`.
+        Returns a formated version of the given `result`.
         """
         _R = ""
         if not self._item_processed:
@@ -847,7 +847,7 @@ class CallbackModule(CallbackBase):
         based on configurations and the task `when` clause.
 
         Returns a number between 0 and 1 representing the probability to show
-            the giving `task`. Currently this method only return 3 possible
+            the given `task`. Currently this method only return 3 possible
             values:
 
             Examples of return values:
@@ -890,7 +890,7 @@ class CallbackModule(CallbackBase):
         return score
 
     def _display_task_name(self, task: "Task", is_handler=False):
-        """(Maybe) Displays the giving `task` title (if given options permit)."""
+        """(Maybe) Displays the given `task` title (if given options permit)."""
         self._item_processed = False
         self._get_task_display_name(task)
 
@@ -920,11 +920,11 @@ class CallbackModule(CallbackBase):
 
     @staticmethod
     def try_parse_string(text: str):
-        """This method will try to parse the giving `text` using JSON and
+        """This method will try to parse the given `text` using JSON and
         YAML parsers in order to return a dictionary representing the parsed
         structure.
 
-        Returns the parsed object from `text`. If the giving `text` was
+        Returns the parsed object from `text`. If the given `text` was
             not a JSON or YAML content, `None` will be returned.
         """
         textobj = None
@@ -954,8 +954,8 @@ class CallbackModule(CallbackBase):
     def reindent_session(
         title: str, text: str, indent: int = 2, width: int = TERMINAL_WIDTH
     ):
-        """This method returns a text formatted with the giving `indent` and
-        wrapped at the giving `width`.
+        """This method returns a text formatted with the given `indent` and
+        wrapped at the given `width`.
         """
         titleindent = " " * indent
         textindent = " " * (indent + 2)
@@ -999,7 +999,7 @@ class CallbackModule(CallbackBase):
     def get_chained_value(mapping: dict, *args):
         """Returns a value from a dictionary.
 
-        It can return chained values based on a list of keys giving by the
+        It can return chained values based on a list of keys given by the
         `args` argument.
 
         Example:

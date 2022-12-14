@@ -8,11 +8,10 @@ The goal of this plugin is to consolidated Ansible's output in the style of
 LINUX/UNIX startup logs, and use unicode symbols to display task status.
 
 This Callback plugin is intended to be used on playbooks that you have
-to execute *"in-person"*, since it does always output to the screen.
+to execute *in-person*, since it does always output to the screen.
 
 In order to use this Callback plugin, you should add this Role as a dependency
-in your project, and set the ``stdout_callback`` option on the
-:file:`ansible.cfg file::
+in your project, and set the `stdout_callback` option on `ansible.cfg`
 
     stdout_callback = beautiful_output
 
@@ -356,7 +355,7 @@ class CallbackModule(CallbackBase):
         self._display_task_name(task)
 
     def v2_playbook_on_handler_task_start(self, task: "Task"):
-        """Displays a title for the giving ``task`, marking it as a handler task."""
+        """Displays a title for the giving `task, marking it as a handler task."""
         self._display_task_name(task, is_handler=True)
 
     def v2_runner_retry(self, result: "TaskResult"):
@@ -577,7 +576,7 @@ class CallbackModule(CallbackBase):
         runnin during this session.
 
         This means that it will collect all the tags available in the giving
-        ``playbook``, and filter against the tags passed to Ansible in the
+        `playbook`, and filter against the tags passed to Ansible in the
         command line.
 
         Args:
@@ -745,10 +744,10 @@ class CallbackModule(CallbackBase):
         symbol_char: str = "",
         indent: int = 2,
     ) -> str:
-        """Displays the given ``result`` of an item task.
+        """Displays the given `result` of an item task.
 
         This method is a simplified version of the
-        :meth:`_process_result_output` method where no sessions are printed.
+        `_process_result_output` method where no sessions are printed.
 
         Args:
             result: TaskResult
@@ -848,7 +847,7 @@ class CallbackModule(CallbackBase):
         based on configurations and the task `when` clause.
 
         Returns a number between 0 and 1 representing the probability to show
-            the giving ``task``. Currently this method only return 3 possible
+            the giving `task`. Currently this method only return 3 possible
             values:
 
             Examples of return values:

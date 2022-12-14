@@ -758,11 +758,8 @@ class CallbackModule(CallbackBase):
 
         Returns a formated version of the given `result`.
         """
-        _R = ""
         if not self._item_processed:
             self._item_processed = True
-            # self.display(to_text("{0}{1} Items:").format(" " * indent, symbol("loop")))
-            _R += to_text("{0}{1} Items:").format(" " * indent, symbol("loop"))
 
         item_name = self._get_item_label(result._result)
         if isinstance(item_name, dict):

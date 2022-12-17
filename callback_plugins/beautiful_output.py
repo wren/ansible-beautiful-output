@@ -295,7 +295,9 @@ class CallbackModule(CallbackBase):
 
     def v2_playbook_on_start(self, playbook: "Playbook"):
         """Displays the Playbook report Header when Ansible starts."""
-        playbook_name = stringc(os.path.basename(playbook._file_name), C.COLOR_HIGHLIGHT)
+        playbook_name = stringc(
+            os.path.basename(playbook._file_name), C.COLOR_HIGHLIGHT
+        )
         if (
             "check" in context.CLIARGS
             and bool(context.CLIARGS["check"])
@@ -401,7 +403,9 @@ class CallbackModule(CallbackBase):
 
         self._preprocess_result(result)
         msg, display_color = CallbackModule.changed_artifacts(result, "ok", C.COLOR_OK)
-        task_result = self._process_result_output(result, msg, symbol("success"), display_color=display_color)
+        task_result = self._process_result_output(
+            result, msg, symbol("success"), display_color=display_color
+        )
         if task_result:
             self.display(task_result, display_color)
 
@@ -409,7 +413,9 @@ class CallbackModule(CallbackBase):
         """If configured to display skipped hosts, will display the skipped host."""
         if C.DISPLAY_SKIPPED_HOSTS:
             self._preprocess_result(result)
-            task_result = self._process_result_output(result, "skipped", symbol("skip"), display_color=C.COLOR_SKIP)
+            task_result = self._process_result_output(
+                result, "skipped", symbol("skip"), display_color=C.COLOR_SKIP
+            )
             if task_result:
                 self.display(task_result, C.COLOR_SKIP)
         else:
@@ -425,7 +431,9 @@ class CallbackModule(CallbackBase):
         self._preprocess_result(result)
         status = "ignored" if ignore_errors else "failed"
         color = C.COLOR_SKIP if ignore_errors else C.COLOR_ERROR
-        task_result = self._process_result_output(result, status, symbol("failure"), display_color=color)
+        task_result = self._process_result_output(
+            result, status, symbol("failure"), display_color=color
+        )
         if task_result:
             self.display(task_result, color)
 
@@ -434,7 +442,9 @@ class CallbackModule(CallbackBase):
         this method will display that information.
         """
         self._flush_display_buffer()
-        task_result = self._process_result_output(result, "unreachable", symbol("dead"), display_color=C.COLOR_UNREACHABLE)
+        task_result = self._process_result_output(
+            result, "unreachable", symbol("dead"), display_color=C.COLOR_UNREACHABLE
+        )
         if task_result:
             self.display(task_result, C.COLOR_UNREACHABLE)
 
@@ -445,7 +455,10 @@ class CallbackModule(CallbackBase):
             result, "ok", C.COLOR_OK
         )
         task_result = self._process_item_result_output(
-            result, status, symbol("success"), display_color=display_color,
+            result,
+            status,
+            symbol("success"),
+            display_color=display_color,
         )
         if task_result:
             self.display(task_result, display_color)
@@ -667,7 +680,7 @@ class CallbackModule(CallbackBase):
 
         if task.name:
             self.task_display_name = str(task.name)
-        elif task.action == 'debug':
+        elif task.action == "debug":
             self.task_display_name = str(task.action)
 
         self.should_display = self.task_display_name != ""
@@ -744,9 +757,11 @@ class CallbackModule(CallbackBase):
                 key in result._result
                 and result._result[key]
                 and self._is_run_verbose(result, verbosity)
-            ):
+            ) or (status == "failed" and key == "msg"):
                 task_result += self.reindent_session(
-                    _session_title.get(key, key), result._result[key], color=display_color
+                    _session_title.get(key, key),
+                    result._result[key],
+                    color=display_color,
                 )
 
         for title, text in result._result.items():
@@ -807,7 +822,9 @@ class CallbackModule(CallbackBase):
         # Error info
         error_info = ""
         if status == "failed":
-            error_info = "\n" + self.reindent_session(_session_title["stderr"], result._result['msg'], color=display_color)
+            error_info = "\n" + self.reindent_session(
+                _session_title["stderr"], result._result["msg"], color=display_color
+            )
 
         return f" {symbol_char} {f'{self.my_role} ' or ''}{self.task_display_name}: {item_name}{host}... {stringc(status.upper(), display_color)}{error_info}"
 
@@ -934,12 +951,12 @@ class CallbackModule(CallbackBase):
 
         if task._role:
             my_role = task._role.get_name() or ""
-            formatted_role = stringc( f"{my_role} |", "dark gray")
+            formatted_role = stringc(f"{my_role} |", "dark gray")
             self.my_role = formatted_role
             temp_name = f"{formatted_role} {temp_name}"
 
         if is_handler:
-            temp_name = ( f"{temp_name} (via handler)")
+            temp_name = f"{temp_name} (via handler)"
 
         # Add symbol and dots
         temp_name = f" {symbol('empty')} {temp_name}... "
@@ -1017,7 +1034,8 @@ class CallbackModule(CallbackBase):
         for line in lines:
             formatted_line = textwrap.fill(text=line, width=width - len(self.my_role))
             formatted_line = stringc(formatted_line, color) if color else formatted_line
-            output += f"   {self.my_role} {formatted_line}\n"
+            formatted_lines = f"   {self.my_role} {formatted_line}".split("\n")
+            output += f"\n   {self.my_role} ".join(formatted_lines)
 
         return output
 

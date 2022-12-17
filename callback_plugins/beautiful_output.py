@@ -73,12 +73,13 @@ _symbol: dict[str, str] = {
     "warning": to_text("⚠"),
     "failure": to_text("🗷"),
     "dead": to_text("✝"),
-    "yaml": to_text("🅨"),
+    "empty": to_text("⬚"),
+    "playbook": to_text("📖"),
     "retry": to_text("️↻"),
     "loop": to_text("∑"),
     "arrow_right": to_text("➞"),
     "skip": to_text("⬚"),
-    "flag": to_text(""),
+    "flag": to_text("🏷"),
 }
 
 
@@ -109,7 +110,7 @@ _session_order = OrderedDict(
         ("stdout", 1),
         ("module_stdout", 1),
         ("stderr", 1),
-        ("module_stderr", 1),
+        ("module_stderr", 0),
         ("rc", 3),
         ("changed", 3),
     ]
@@ -163,7 +164,7 @@ def iscollection(obj: object) -> bool:
 
 
 def stringtruncate(
-    value: str | int,
+    value: str,
     color: Optional[str] = "normal",
     width: Optional[int] = 0,
     justfn: Optional[Callable] = None,
@@ -255,13 +256,21 @@ class CallbackModule(CallbackBase):
 
     def __init__(self, display=None):
         CallbackBase.__init__(self, display)
-        self.delegated_vars = None
-        self._item_processed = False
-        self._current_play = None
-        self._current_host = None
-        self._task_name_buffer = None
+        self.delegated_vars: dict
+        self._item_processed: bool
+        self._current_play: "Play" = None
+        self._current_host: str
+        self._task_name_buffer: str
+        self.task_display_name: str
+        self.should_display: bool = False
 
-    def display(self, msg: str, color: Optional[str] = None, stderr: bool = False):
+    def display(
+        self,
+        msg: str,
+        color: Optional[str] = None,
+        stderr: bool = False,
+        newline: bool = True,
+    ):
         """Helper method to display text on the screen.
 
         This method is a thin wrapper aroung the
@@ -276,6 +285,7 @@ class CallbackModule(CallbackBase):
             color=color,
             stderr=stderr,
             screen_only=True,
+            newline=newline,
         )
         self._display.display(
             msg=ansi_escape.sub("", msg),
@@ -285,19 +295,16 @@ class CallbackModule(CallbackBase):
 
     def v2_playbook_on_start(self, playbook: "Playbook"):
         """Displays the Playbook report Header when Ansible starts."""
-        playbook_name = to_text("{0} {1}").format(
-            symbol(to_text("yaml"), C.COLOR_HIGHLIGHT),
-            stringc(os.path.basename(playbook._file_name), C.COLOR_HIGHLIGHT),
-        )
+        playbook_name = stringc(os.path.basename(playbook._file_name), C.COLOR_HIGHLIGHT)
         if (
             "check" in context.CLIARGS
             and bool(context.CLIARGS["check"])
             and not self._is_run_verbose(verbosity=3)
             and not C.DISPLAY_ARGS_TO_STDOUT
         ):
-            playbook_name = to_text("{0} (check mode)").format(playbook_name)
+            playbook_name = f"{playbook_name} (check mode)"
 
-        self.display(to_text("\nExecuting playbook {0}").format(playbook_name))
+        self.display(to_text(f"{symbol('playbook')} Playbook: {playbook_name}"))
 
         # show CLI arguments
         if self._is_run_verbose(verbosity=3) or C.DISPLAY_ARGS_TO_STDOUT:
@@ -394,16 +401,17 @@ class CallbackModule(CallbackBase):
 
         self._preprocess_result(result)
         msg, display_color = CallbackModule.changed_artifacts(result, "ok", C.COLOR_OK)
-        task_result = self._process_result_output(result, msg, symbol("success"))
-        self.display(task_result, display_color)
+        task_result = self._process_result_output(result, msg, symbol("success"), display_color=display_color)
+        if task_result:
+            self.display(task_result, display_color)
 
     def v2_runner_on_skipped(self, result: "TaskResult"):
         """If configured to display skipped hosts, will display the skipped host."""
         if C.DISPLAY_SKIPPED_HOSTS:
             self._preprocess_result(result)
-            task_result = self._process_result_output(result, "skipped", symbol("skip"))
-            self.display(task_result, C.COLOR_SKIP)
-            pass
+            task_result = self._process_result_output(result, "skipped", symbol("skip"), display_color=C.COLOR_SKIP)
+            if task_result:
+                self.display(task_result, C.COLOR_SKIP)
         else:
             self.outlines = []
 
@@ -417,16 +425,18 @@ class CallbackModule(CallbackBase):
         self._preprocess_result(result)
         status = "ignored" if ignore_errors else "failed"
         color = C.COLOR_SKIP if ignore_errors else C.COLOR_ERROR
-        task_result = self._process_result_output(result, status, symbol("failure"))
-        self.display(task_result, color)
+        task_result = self._process_result_output(result, status, symbol("failure"), display_color=color)
+        if task_result:
+            self.display(task_result, color)
 
     def v2_runner_on_unreachable(self, result: "TaskResult"):
         """When a host becames *unreachable* before the execution of its task,
         this method will display that information.
         """
         self._flush_display_buffer()
-        task_result = self._process_result_output(result, "unreachable", symbol("dead"))
-        self.display(task_result, C.COLOR_UNREACHABLE)
+        task_result = self._process_result_output(result, "unreachable", symbol("dead"), display_color=C.COLOR_UNREACHABLE)
+        if task_result:
+            self.display(task_result, C.COLOR_UNREACHABLE)
 
     def v2_runner_item_on_ok(self, result: "TaskResult"):
         """Displays the result of a task run."""
@@ -435,29 +445,33 @@ class CallbackModule(CallbackBase):
             result, "ok", C.COLOR_OK
         )
         task_result = self._process_item_result_output(
-            result, status, symbol("success")
+            result, status, symbol("success"), display_color=display_color,
         )
-        self.display(task_result, display_color)
+        if task_result:
+            self.display(task_result, display_color)
 
-    def v2_runner_item_on_skipped(self, result: "TaskResult"):
+    def v2_runner_item_on_skipped(self, result: "TaskResult") -> None:
         """If configured to display skipped hosts, this method
         will display the skipped task."""
-        if C.DISPLAY_SKIPPED_HOSTS:
-            self._preprocess_result(result)
-            task_result = self._process_item_result_output(
-                result, "skipped", symbol("skip")
-            )
-            self.display(task_result, C.COLOR_SKIP)
-        else:
+        if not C.DISPLAY_SKIPPED_HOSTS:
             self.outlines = []
+            return
+
+        self._preprocess_result(result)
+        task_result = self._process_item_result_output(
+            result, "skipped", symbol("skip"), display_color=C.COLOR_SKIP
+        )
+        if task_result:
+            self.display(task_result, C.COLOR_SKIP)
 
     def v2_runner_item_on_failed(self, result: "TaskResult"):
         """When a task fails, this displays information about the failure."""
         self._flush_display_buffer()
         task_result = self._process_item_result_output(
-            result, "failed", symbol("failure")
+            result, "failed", symbol("failure"), display_color=C.COLOR_ERROR
         )
-        self.display(task_result, C.COLOR_ERROR)
+        if task_result:
+            self.display(task_result, C.COLOR_ERROR)
 
     def v2_playbook_on_stats(self, stats):
         """When the execution of a playbook finishes, this displays a summary.
@@ -512,23 +526,25 @@ class CallbackModule(CallbackBase):
             (host_summary["ignored"] or 0, C.COLOR_WARN, 7),
         )
 
-    def _handle_exception(self, result: "TaskResult", use_stderr: bool = False):
+    def _handle_exception(self, result: dict["TaskResult"], use_stderr: bool = False):
         """When an exception happens during a playbook, this
         displays information about the crash.
         """
-        if "exception" in result:
-            result["use_stderr"] = use_stderr
-            msg = "An exception occurred during task execution. "
-            if not self._is_run_verbose(verbosity=3):
-                # extract just the actual error message from the exception text
+        if "exception" not in result:
+            return
 
-                error = result["exception"].strip().split("\n")[-1]
-                msg += "To see the full traceback, use -vvv. The error was: %s" % error
-            elif "module_stderr" in result:
-                if result["exception"] != result["module_stderr"]:
-                    msg = "The full traceback is:\n" + result["exception"]
-                del result["exception"]
-            result["stderr"] = msg
+        result["use_stderr"] = use_stderr
+        msg = "An exception occurred during task execution. "
+        if not self._is_run_verbose(verbosity=3):
+            # extract just the actual error message from the exception text
+
+            error = result["exception"].strip().split("\n")[-1]
+            msg += "To see the full traceback, use -vvv. The error was: %s" % error
+        elif "module_stderr" in result:
+            if result["exception"] != result["module_stderr"]:
+                msg = "The full traceback is:\n" + result["exception"]
+            del result["exception"]
+        result["stderr"] = msg
 
     def _is_run_verbose(self, result: "TaskResult" = None, verbosity: int = 0) -> bool:
         """Verify if the current run is verbose (should display information)
@@ -596,8 +612,6 @@ class CallbackModule(CallbackBase):
                     for task in blocks.block:
                         tags.update(task.tags)
                         T.append(task.tags)
-        #        with open('/tmp/dat.tags','w') as f:
-        #            f.write(simplejson.dumps(tags))
 
         """
         with open('/tmp/dat.tags_T','w') as f:
@@ -647,16 +661,16 @@ class CallbackModule(CallbackBase):
         self.display("\n")
         self.display(tag_strings)
 
-    def _get_task_display_name(self, task: object):
+    def _get_task_display_name(self, task: "Task"):
         """Caches the given `task` name if it is not an included task."""
-        self.task_display_name = None
-        display_name = task.get_name().strip().split(" : ")
+        self.task_display_name = ""
 
-        task_display_name = display_name[-1]
-        if task_display_name.startswith("include"):
-            return
-        else:
-            self.task_display_name = task_display_name
+        if task.name:
+            self.task_display_name = str(task.name)
+        elif task.action == 'debug':
+            self.task_display_name = str(task.action)
+
+        self.should_display = self.task_display_name != ""
 
     def _preprocess_result(self, result: "TaskResult"):
         """Checks the result object for errors or warnings. Also makes sure
@@ -672,7 +686,10 @@ class CallbackModule(CallbackBase):
 
         Returns a formatted version of the host that generated the `result`.
         """
-        task_host = to_text("{0}{1}").format(prefix, result._host.get_name())
+        task_host = result._host.get_name()
+        if task_host == "localhost":
+            return ""
+        task_host = f"{prefix}{task_host}"
         if self.delegated_vars:
             task_host += to_text(" {0} {1}{2}").format(
                 symbol("arrow_right"), prefix, self.delegated_vars["ansible_host"]
@@ -684,7 +701,7 @@ class CallbackModule(CallbackBase):
         result: "TaskResult",
         status: str,
         symbol_char: str = "",
-        indent: int = 2,
+        display_color: str = "",
     ) -> str:
         """Returns the result converted to string.
 
@@ -708,14 +725,19 @@ class CallbackModule(CallbackBase):
 
         Returns a formated version of the given `result`.
         """
+        if not self.should_display:
+            # The title didn't display, so there's no status to update
+            return ""
+
+        task_result = ""
         task_host = self._get_host_string(result)
 
-        task_result = to_text("{0}{1}{2} [{3}]").format(
-            " " * indent,
-            symbol_char + " " if symbol_char else "",
-            task_host,
-            status.upper(),
-        )
+        if not self._item_processed:
+            task_result = to_text("{0}{1}{2}").format(
+                task_host,
+                status.upper(),
+                f"\r {symbol_char} \n" if symbol_char else "",
+            )
 
         for key, verbosity in _session_order.items():
             if (
@@ -724,7 +746,7 @@ class CallbackModule(CallbackBase):
                 and self._is_run_verbose(result, verbosity)
             ):
                 task_result += self.reindent_session(
-                    _session_title.get(key, key), result._result[key], indent + 2
+                    _session_title.get(key, key), result._result[key], color=display_color
                 )
 
         for title, text in result._result.items():
@@ -732,7 +754,7 @@ class CallbackModule(CallbackBase):
                 task_result += self.reindent_session(
                     title.replace("_", " ").replace(".", " ").capitalize(),
                     text,
-                    indent + 2,
+                    color=display_color,
                 )
 
         return task_result
@@ -742,7 +764,7 @@ class CallbackModule(CallbackBase):
         result: "TaskResult",
         status: str,
         symbol_char: str = "",
-        indent: int = 2,
+        display_color: str = "",
     ) -> str:
         """Displays the given `result` of an item task.
 
@@ -758,7 +780,11 @@ class CallbackModule(CallbackBase):
 
         Returns a formated version of the given `result`.
         """
+        if not self.should_display:
+            return ""
         if not self._item_processed:
+            # first item
+            self.display("\r", newline=False)
             self._item_processed = True
 
         item_name = self._get_item_label(result._result)
@@ -773,11 +799,17 @@ class CallbackModule(CallbackBase):
                         json.dumps(item_name, separators=(",", ":")), width=36
                     )
                 )
+
+        # prep output vars
         task_host = self._get_host_string(result, "@")
-        task_result = to_text("{0}{1} {2} ({3}) [{4}]").format(
-            " " * (indent + 2), symbol_char, item_name, task_host, status.upper()
-        )
-        return task_result
+        host = f" ({task_host})" if task_host else ""
+
+        # Error info
+        error_info = ""
+        if status == "failed":
+            error_info = "\n" + self.reindent_session(_session_title["stderr"], result._result['msg'], color=display_color)
+
+        return f" {symbol_char} {f'{self.my_role} ' or ''}{self.task_display_name}: {item_name}{host}... {stringc(status.upper(), display_color)}{error_info}"
 
     def _display_summary_table_separator(self, symbol_char):
         """Displays a line separating header or footer from content on the
@@ -873,7 +905,7 @@ class CallbackModule(CallbackBase):
                     if not task.evaluate_conditional(templar, host_vars):
                         score = 0.0
                         break
-                except Exception as e:
+                except Exception:
                     exception = True
             else:
                 if not exception:
@@ -884,6 +916,10 @@ class CallbackModule(CallbackBase):
                 if self._is_run_verbose(verbosity=int(task_args["verbosity"]))
                 else 0.0
             )
+
+        if not task.name and task.action != "debug":
+            score = 0.0
+
         return score
 
     def _display_task_name(self, task: "Task", is_handler=False):
@@ -891,29 +927,38 @@ class CallbackModule(CallbackBase):
         self._item_processed = False
         self._get_task_display_name(task)
 
-        if self.task_display_name:
-            if task._role:
-                self.task_display_name += stringc(
-                    " [%s]" % task._role.get_name(), "dark gray"
-                )
+        if not self.task_display_name:
+            return
 
-            self._task_name_buffer = (
-                self.task_display_name
-                if not is_handler
-                else "%s (via handler)..." % self.task_display_name
-            )
+        temp_name = self.task_display_name
 
-            display_score = self._display_task_decision_score(task)
-            if display_score >= 1.0 or C.DISPLAY_SKIPPED_HOSTS:
-                self._flush_display_buffer()
-            elif display_score < 0.1:
-                self._task_name_buffer = None
+        if task._role:
+            my_role = task._role.get_name() or ""
+            formatted_role = stringc( f"{my_role} |", "dark gray")
+            self.my_role = formatted_role
+            temp_name = f"{formatted_role} {temp_name}"
+
+        if is_handler:
+            temp_name = ( f"{temp_name} (via handler)")
+
+        # Add symbol and dots
+        temp_name = f" {symbol('empty')} {temp_name}... "
+
+        self._task_name_buffer = temp_name
+
+        display_score = self._display_task_decision_score(task)
+        if display_score >= 1.0 or C.DISPLAY_SKIPPED_HOSTS:
+            self._flush_display_buffer()
+        elif display_score < 0.1:
+            self._task_name_buffer = None
 
     def _flush_display_buffer(self):
         """Display a task title if there is one to display."""
-        if self._task_name_buffer:
-            self.display(self._task_name_buffer)
-            self._task_name_buffer = None
+        if not self._task_name_buffer:
+            return
+
+        self.display(self._task_name_buffer, newline=False)
+        self._task_name_buffer = None
 
     @staticmethod
     def try_parse_string(text: str):
@@ -947,34 +992,33 @@ class CallbackModule(CallbackBase):
             text = yaml.dump(obj, Dumper=yaml.SafeDumper, default_flow_style=False)
         return text
 
-    @staticmethod
     def reindent_session(
-        title: str, text: str, indent: int = 2, width: int = TERMINAL_WIDTH
+        self, title: str, text: str, width: int = TERMINAL_WIDTH, color: str = ""
     ):
         """This method returns a text formatted with the given `indent` and
         wrapped at the given `width`.
         """
-        titleindent = " " * indent
-        textindent = " " * (indent + 2)
-        textwidth = width - (indent + len(title) + 2)
+        textwidth = width - len(title)
         textstr = str(text).strip()
         dumped = False
         if textstr.startswith("---") or textstr.startswith("{"):
             dumped = CallbackModule.dump_value(textstr)
             textstr = dumped if dumped else textstr
-        output = to_text("\n{0}{1}:").format(titleindent, title)
         lines = textstr.splitlines()
 
+        formatted_title = stringc(f"{title}:", color) if color else title
+        output = f"   {self.my_role} {formatted_title}\n"
+
         if (len(lines) == 1) and (len(textstr) <= textwidth) and (not dumped):
-            output += " %s" % textstr
-        else:
-            for line in lines:
-                output += "\n%s" % textwrap.fill(
-                    text=line,
-                    width=width,
-                    initial_indent=textindent,
-                    subsequent_indent=textindent,
-                )
+            formatted_line = stringc(textstr, color) if color else textstr
+            output += f"   {self.my_role} {formatted_line}"
+            return output
+
+        for line in lines:
+            formatted_line = textwrap.fill(text=line, width=width - len(self.my_role))
+            formatted_line = stringc(formatted_line, color) if color else formatted_line
+            output += f"   {self.my_role} {formatted_line}\n"
+
         return output
 
     @staticmethod

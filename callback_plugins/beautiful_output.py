@@ -345,20 +345,22 @@ class CallbackModule(CallbackBase):
             self._current_play = play
             return
 
+        if play.hosts:
+            self.display("💻 Hosts: ", newline=False)
+            my_hosts = []
+            for host in play.hosts:
+                my_hosts.append(stringc(host, C.COLOR_HIGHLIGHT))
+            self.display(", ".join(my_hosts))
+
         self._current_play = play
         name = play.get_name().strip()
         if name:
-            self.display(to_text(f"[PLAY: {name}]").center(TERMINAL_WIDTH, DIVIDER))
+            self.display(f"🃏 Play: {stringc(name, C.COLOR_HIGHLIGHT)}")
         else:
-            self.display("[PLAY]".center(TERMINAL_WIDTH, DIVIDER))
+            self.display("🃏 Play: 🤷")
 
-        if play.hosts:
-            self.display("Hosts:")
-            for host in play.hosts:
-                self.display(
-                    to_text("  - {0}").format(stringc(host, C.COLOR_HIGHLIGHT))
-                )
-            self.display(DIVIDER * TERMINAL_WIDTH)
+        self.display("\n🚀 Start:")
+
 
     def v2_playbook_on_task_start(self, task: "Task", is_conditional: bool):
         """Displays a title for the given `task."""
@@ -610,12 +612,10 @@ class CallbackModule(CallbackBase):
         command line.
 
         Args:
-            playbook (:obj:`~ansible.playbook.Playbook`): The playbook where to
-                look for tags.
+            playbook: The playbook where to look for tags.
 
         Returns:
-            :obj:`list` of :obj:`str`: A sorted list of all tags used in this
-            run.
+            A sorted list of all tags used in this run.
         """
         tags = set()
         T = []
@@ -626,14 +626,6 @@ class CallbackModule(CallbackBase):
                     for task in blocks.block:
                         tags.update(task.tags)
                         T.append(task.tags)
-
-        """
-        with open('/tmp/dat.tags_T','w') as f:
-            f.write(simplejson.dumps(T))
-
-        with open('/tmp/dat.tags_req','w') as f:
-            f.write(simplejson.dumps(context.CLIARGS["tags"]))
-        """
 
         if "tags" in context.CLIARGS:
             requested_tags = set(context.CLIARGS["tags"])
@@ -649,31 +641,10 @@ class CallbackModule(CallbackBase):
         If the line is longer than `width` characters, the line will wrap.
         """
         tags = self._get_tags(playbook)
-        tag_strings = ""
-        total_len = 0
-        first_item = True
-        for tag in sorted(tags):
-            escape_code = "\x1b[30;47m"
-            if not first_item:
-                if total_len + len(tag) + 5 > width:
-                    tag_strings += to_text("\n\n  {0} {1} {2} {3}").format(
-                        escape_code, symbol("flag"), tag, "\x1b[0m"
-                    )
-                    total_len = len(tag) + 6
-                    first_item = True
-                else:
-                    tag_strings += to_text(" {0} {1} {2} {3}").format(
-                        escape_code, symbol("flag"), tag, "\x1b[0m"
-                    )
-                    total_len += len(tag) + 5
-            else:
-                first_item = False
-                tag_strings += to_text("  {0} {1} {2} {3}").format(
-                    escape_code, symbol("flag"), tag, "\x1b[0m"
-                )
-                total_len = len(tag) + 6
-        self.display("\n")
-        self.display(tag_strings)
+        formatted_tags = []
+        for tag in tags:
+            formatted_tags.append(stringc(tag, C.COLOR_HIGHLIGHT))
+        self.display(f"🏴 Tags: {', '.join(formatted_tags)}")
 
     def _get_task_display_name(self, task: "Task"):
         """Caches the given `task` name if it is not an included task."""

@@ -96,6 +96,7 @@ _session_title: dict[str, str] = {
     "changed": "Environment changed",
     "_ansible_no_log": "Omit logs",
     "use_stderr": "Use STDERR to output",
+    "_ansible_verbose_always": "Who cares"
 }
 
 

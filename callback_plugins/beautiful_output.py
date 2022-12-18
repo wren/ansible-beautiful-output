@@ -96,7 +96,7 @@ _session_title: dict[str, str] = {
     "changed": "Environment changed",
     "_ansible_no_log": "Omit logs",
     "use_stderr": "Use STDERR to output",
-    "_ansible_verbose_always": "Who cares"
+    "_ansible_verbose_always": "Who cares",
 }
 
 
@@ -262,8 +262,10 @@ class CallbackModule(CallbackBase):
         self._current_play: "Play" = None
         self._current_host: str
         self._task_name_buffer: str
-        self.task_display_name: str
+        self.previous_task_display_name: Optional[str] = None
+        self.task_display_name: str = ""
         self.should_display: bool = False
+        self.my_role: str = ""
 
     def display(
         self,
@@ -610,12 +612,10 @@ class CallbackModule(CallbackBase):
         command line.
 
         Args:
-            playbook (:obj:`~ansible.playbook.Playbook`): The playbook where to
-                look for tags.
+            playbook: The playbook where to look for tags.
 
         Returns:
-            :obj:`list` of :obj:`str`: A sorted list of all tags used in this
-            run.
+            A sorted list of all tags used in this run.
         """
         tags = set()
         T = []
@@ -626,14 +626,6 @@ class CallbackModule(CallbackBase):
                     for task in blocks.block:
                         tags.update(task.tags)
                         T.append(task.tags)
-
-        """
-        with open('/tmp/dat.tags_T','w') as f:
-            f.write(simplejson.dumps(T))
-
-        with open('/tmp/dat.tags_req','w') as f:
-            f.write(simplejson.dumps(context.CLIARGS["tags"]))
-        """
 
         if "tags" in context.CLIARGS:
             requested_tags = set(context.CLIARGS["tags"])
@@ -677,6 +669,7 @@ class CallbackModule(CallbackBase):
 
     def _get_task_display_name(self, task: "Task"):
         """Caches the given `task` name if it is not an included task."""
+        self.previous_task_display_name = self.task_display_name
         self.task_display_name = ""
 
         if task.name:
@@ -800,7 +793,7 @@ class CallbackModule(CallbackBase):
             return ""
         if not self._item_processed:
             # first item
-            self.display("\r", newline=False)
+            self.display("\r ▼\n", newline=False)
             self._item_processed = True
 
         item_name = self._get_item_label(result._result)
@@ -827,7 +820,7 @@ class CallbackModule(CallbackBase):
                 _session_title["stderr"], result._result["msg"], color=display_color
             )
 
-        return f" {symbol_char} {f'{self.my_role} ' or ''}{self.task_display_name}: {item_name}{host}... {stringc(status.upper(), display_color)}{error_info}"
+        return f" - {symbol_char} {item_name}{host}{error_info}"
 
     def _display_summary_table_separator(self, symbol_char):
         """Displays a line separating header or footer from content on the
@@ -945,16 +938,22 @@ class CallbackModule(CallbackBase):
         self._item_processed = False
         self._get_task_display_name(task)
 
-        if not self.task_display_name:
-            return
-
         temp_name = self.task_display_name
 
         if task._role:
             my_role = task._role.get_name() or ""
-            formatted_role = stringc(f"{my_role} |", "dark gray")
-            self.my_role = formatted_role
-            temp_name = f"{formatted_role} {temp_name}"
+            if self.my_role != my_role:
+                # new role
+                self._print_title(my_role)
+                # Always show first task in new role
+                self.previous_task_display_name = None
+            self.my_role = my_role
+
+        if (
+            not self.task_display_name
+            or self.previous_task_display_name == self.task_display_name
+        ):
+            return
 
         if is_handler:
             temp_name = f"{temp_name} (via handler)"
@@ -969,6 +968,11 @@ class CallbackModule(CallbackBase):
             self._flush_display_buffer()
         elif display_score < 0.1:
             self._task_name_buffer = None
+
+    def _print_title(self, string):
+        c = "─"
+        divider = c * (TERMINAL_WIDTH - len(string) - 4)
+        self.display(stringc(f"\n{c * 2} {string} {divider}", "blue"))
 
     def _flush_display_buffer(self):
         """Display a task title if there is one to display."""

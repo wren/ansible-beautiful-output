@@ -765,8 +765,8 @@ class CallbackModule(CallbackBase):
                 )
 
         for title, text in result._result.items():
-            if title not in _session_title and text and self._is_run_verbose(result, 2):
-                task_result += self.reindent_session(
+            if title not in _session_title and text and self._is_run_verbose(result, 3):
+                task_result += "\n" + self.reindent_session(
                     title.replace("_", " ").replace(".", " ").capitalize(),
                     text,
                     color=display_color,
@@ -1028,15 +1028,17 @@ class CallbackModule(CallbackBase):
 
         if (len(lines) == 1) and (len(textstr) <= textwidth) and (not dumped):
             formatted_line = stringc(textstr, color) if color else textstr
-            output += f"   {self.my_role} {formatted_line}"
+            output += f"   {self.my_role} {formatted_line}\n"
             return output
 
         for line in lines:
             formatted_line = textwrap.fill(text=line, width=width - len(self.my_role))
             formatted_line = stringc(formatted_line, color) if color else formatted_line
             formatted_lines = f"   {self.my_role} {formatted_line}".split("\n")
-            output += f"\n   {self.my_role} ".join(formatted_lines)
-
+            if len(formatted_lines) > 1:
+                output += f"\n   {self.my_role} ".join(formatted_lines)
+            else:
+                output += f"{formatted_lines[0]}\n"
         return output
 
     @staticmethod
